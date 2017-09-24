@@ -1,0 +1,19 @@
+{
+    "name": "import-sort-style-gw",
+    "version": "1.0.0",
+    "description": "GW import style",
+    "main": "lib/index.js",
+    "scripts": {
+        "test": "node_modules/.bin/jest"
+    },
+    "author": "Ferdy Budhidharma",
+    "license": "ISC",
+    "devDependencies": {
+        "import-sort": "^3.3.0",
+        "import-sort-style": "^3.0.0",
+        "jest": "^21.1.0",
+        "ts-node": "^3.3.0",
+        "tslint": "^5.7.0",
+        "typescript": "^2.5.2"
+    }
+}
