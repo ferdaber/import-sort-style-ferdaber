@@ -1,44 +1,26 @@
-import { IStyleAPI, IStyleItem } from "import-sort-style"
+import { IStyleAPI, IStyleItem, ISelectorFunction, IPredicateFunction } from "import-sort-style"
 
+const none = (s: IStyleAPI, selector: ISelectorFunction) => (...predicates: IPredicateFunction[]) =>
+    s.not(s.or.apply(null, predicates.map(p => selector(p))))
+
+const insensitiveUnicode = (a: string, b: string) =>
+    a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0
+
+const isReact = (s: string) => s === "react"
 const isSetup = (s: string) => s === "setup"
-const hasSubDirectory = (s: string) => s.includes("/")
-const startsWithAt = (s: string) => s.startsWith("@")
-const endsWithExtension = (s: string) => /\.*$/.test(s)
+const isSubDir = (s: string) => s.includes("/")
+const isStartsWithAt = (s: string) => s.startsWith("@")
+const isWithExtension = (s: string) => /\.\w+$/.test(s)
 const isStyleImport = (s: string) => s.endsWith(".less") || s.endsWith(".css") || s.endsWith(".scss")
 
 export default (s: IStyleAPI): IStyleItem[] => [
+    {
+        match: s.moduleName(isReact)
+    },
     // import React from 'react'
     {
-        match: s.and(
-            s.isAbsoluteModule,
-            s.hasOnlyDefaultMember,
-            s.not(
-                s.or(
-                    s.moduleName(hasSubDirectory),
-                    s.moduleName(endsWithExtension),
-                    s.moduleName(startsWithAt),
-                    s.moduleName(isSetup)
-                )
-            )
-        ),
-        sort: s.member(s.unicode)
-    },
-    // import React, { Component } from 'react'
-    {
-        match: s.and(
-            s.isAbsoluteModule,
-            s.hasNamedMembers,
-            s.not(
-                s.or(
-                    s.moduleName(hasSubDirectory),
-                    s.moduleName(endsWithExtension),
-                    s.moduleName(startsWithAt),
-                    s.moduleName(isSetup)
-                )
-            )
-        ),
-        sort: s.member(s.unicode),
-        sortNamedMembers: s.name(s.unicode)
+        match: s.and(s.isAbsoluteModule, s.not(s.hasOnlyNamespaceMember), none(s, s.moduleName)(isSubDir, isSetup)),
+        sort: s.member(insensitiveUnicode)
     },
     {
         separator: true
@@ -47,20 +29,21 @@ export default (s: IStyleAPI): IStyleItem[] => [
     // import { foo, bar } from 'foo/bar'
     {
         match: s.and(
-            s.or(s.moduleName(isSetup), s.moduleName(hasSubDirectory)),
-            s.not(s.or(s.moduleName(endsWithExtension), s.moduleName(startsWithAt)))
+            s.or(s.moduleName(isSubDir), s.moduleName(isSetup)),
+            s.not(s.hasOnlyNamespaceMember),
+            none(s, s.moduleName)(isStartsWithAt, isWithExtension)
         ),
-        sort: s.member(s.unicode),
-        sortNamedMembers: s.name(s.unicode)
+        sort: s.member(insensitiveUnicode),
+        sortNamedMembers: s.name(insensitiveUnicode)
     },
     {
         separator: true
     },
     // import Foo from '@private-repo/foo'
     {
-        match: s.and(s.moduleName(startsWithAt), s.not(s.moduleName(endsWithExtension))),
-        sort: s.member(s.unicode),
-        sortNamedMembers: s.name(s.unicode)
+        match: s.and(s.moduleName(isStartsWithAt), s.not(s.hasOnlyNamespaceMember)),
+        sort: s.member(insensitiveUnicode),
+        sortNamedMembers: s.name(insensitiveUnicode)
     },
     {
         separator: true
@@ -68,16 +51,16 @@ export default (s: IStyleAPI): IStyleItem[] => [
     // import * as foo from 'bar'
     {
         match: s.hasNamespaceMember,
-        sort: s.member(s.unicode),
-        sortNamedMembers: s.name(s.unicode)
+        sort: s.member(insensitiveUnicode),
+        sortNamedMembers: s.name(insensitiveUnicode)
     },
     {
         separator: true
     },
     // import Image from 'foo/image.svg'
     {
-        match: s.and(s.moduleName(endsWithExtension), s.not(s.moduleName(isStyleImport))),
-        sort: s.member(s.unicode)
+        match: s.and(s.moduleName(isWithExtension), s.not(s.moduleName(isStyleImport))),
+        sort: s.member(insensitiveUnicode)
     },
     {
         separator: true
@@ -85,7 +68,7 @@ export default (s: IStyleAPI): IStyleItem[] => [
     // import 'foo/bar'
     {
         match: s.and(s.hasNoMember, s.not(s.moduleName(isStyleImport))),
-        sort: s.moduleName(s.unicode)
+        sort: s.moduleName(insensitiveUnicode)
     },
     {
         separator: true
@@ -93,6 +76,6 @@ export default (s: IStyleAPI): IStyleItem[] => [
     // import './foo.css'
     {
         match: s.and(s.hasNoMember, s.moduleName(isStyleImport)),
-        sort: s.moduleName(s.unicode)
+        sort: s.moduleName(insensitiveUnicode)
     }
 ]
